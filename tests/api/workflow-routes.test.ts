@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/airtable/repositories", () => ({
   listContacts: vi.fn(),
   createContact: vi.fn(),
+  getSearchRun: vi.fn(),
   updateOpportunity: vi.fn(),
   listDrafts: vi.fn(),
   listOutreachEvents: vi.fn(),
@@ -18,11 +19,14 @@ vi.mock("@/lib/services/drafts", () => ({
 
 vi.mock("@/lib/services/research", () => ({
   qualifyFinding: vi.fn(),
+  startResearchRun: vi.fn(),
+  executeResearchRun: vi.fn(),
   runResearch: vi.fn()
 }));
 
 import {
   createContact,
+  getSearchRun,
   listContacts,
   listDrafts,
   listFindings,
@@ -32,7 +36,11 @@ import {
   updateOpportunity
 } from "@/lib/airtable/repositories";
 import { generateDraft, logOutreachEvent } from "@/lib/services/drafts";
-import { qualifyFinding, runResearch } from "@/lib/services/research";
+import {
+  executeResearchRun,
+  qualifyFinding,
+  startResearchRun
+} from "@/lib/services/research";
 import { GET as getContacts, POST as postContacts } from "@/app/api/contacts/route";
 import { GET as getDrafts, POST as postDrafts } from "@/app/api/drafts/route";
 import { GET as getFindings } from "@/app/api/findings/route";
@@ -45,6 +53,7 @@ import {
 import { POST as postLabResearch } from "@/app/api/research/labs/route";
 import { POST as postStartupResearch } from "@/app/api/research/startups/route";
 import { GET as getSearchRuns } from "@/app/api/search-runs/route";
+import { GET as getSearchRunDetail } from "@/app/api/search-runs/[id]/route";
 
 describe("workflow endpoints", () => {
   beforeEach(() => {
@@ -225,7 +234,6 @@ describe("workflow endpoints", () => {
       lastActivityDate: "",
       outcome: "",
       owner: "Owner",
-      openClosed: "open",
       profileIds: [],
       relatedFindingIds: ["finding_1"]
     });
@@ -269,7 +277,6 @@ describe("workflow endpoints", () => {
         lastActivityDate: "",
         outcome: "",
         owner: "Owner",
-        openClosed: "open",
         profileIds: [],
         relatedFindingIds: []
       }
@@ -369,29 +376,68 @@ describe("workflow endpoints", () => {
     expect(payload[0].runName).toBe("Lab Search");
   });
 
-  it("runs lab research", async () => {
-    vi.mocked(runResearch).mockResolvedValue({
-      searchRunId: "run_1",
-      findings: [
-        {
-          id: "finding_1",
-          title: "Lab",
-          url: "https://example.com",
-          source: "google",
-          snippet: "Snippet",
-          targetType: "lab",
-          searchRunIds: ["run_1"],
-          candidateName: "Vision Lab",
-          categoryTags: [],
-          location: "Davis",
-          decision: "new",
-          decisionReason: "",
-          matchedOpportunityIds: [],
-          lastVerified: new Date().toISOString(),
-          structuredData: "{}"
-        }
-      ]
+  it("loads a single search run with linked findings", async () => {
+    vi.mocked(getSearchRun).mockResolvedValue({
+      id: "run_1",
+      runName: "Lab Search",
+      targetType: "lab",
+      source: "manual",
+      queryText: "labs",
+      filtersUsed: "",
+      profileIds: ["prof_1"],
+      runDate: new Date().toISOString(),
+      status: "running",
+      notes: "Sending research prompt to OpenAI with web search enabled.",
+      resultCount: 0,
+      importedCount: 0
     });
+    vi.mocked(listFindings).mockResolvedValue([
+      {
+        id: "finding_1",
+        title: "Lab",
+        url: "https://example.com/lab",
+        source: "google",
+        snippet: "Snippet",
+        targetType: "lab",
+        searchRunIds: ["run_1"],
+        candidateName: "Vision Lab",
+        categoryTags: ["ai_ml"],
+        location: "Davis",
+        decision: "new",
+        decisionReason: "",
+        matchedOpportunityIds: [],
+        lastVerified: new Date().toISOString(),
+        structuredData: "{}"
+      }
+    ]);
+
+    const response = await getSearchRunDetail(
+      new Request("http://localhost/api/search-runs/run_1"),
+      { params: Promise.resolve({ id: "run_1" }) }
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.searchRun.id).toBe("run_1");
+    expect(payload.findings).toHaveLength(1);
+  });
+
+  it("runs lab research", async () => {
+    vi.mocked(startResearchRun).mockResolvedValue({
+      id: "run_1",
+      runName: "Lab Search",
+      targetType: "lab",
+      source: "manual",
+      queryText: "labs",
+      filtersUsed: "",
+      profileIds: ["prof_1"],
+      runDate: new Date().toISOString(),
+      status: "running",
+      notes: "",
+      resultCount: 0,
+      importedCount: 0
+    });
+    vi.mocked(executeResearchRun).mockResolvedValue([]);
 
     const form = new FormData();
     form.set("profileId", "prof_1");
@@ -407,31 +453,25 @@ describe("workflow endpoints", () => {
 
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toContain("status=success");
+    expect(vi.mocked(startResearchRun)).toHaveBeenCalled();
   });
 
   it("runs startup research", async () => {
-    vi.mocked(runResearch).mockResolvedValue({
-      searchRunId: "run_2",
-      findings: [
-        {
-          id: "finding_2",
-          title: "Startup",
-          url: "https://startup.com",
-          source: "crunchbase",
-          snippet: "Snippet",
-          targetType: "startup",
-          searchRunIds: ["run_2"],
-          candidateName: "Startup Inc",
-          categoryTags: [],
-          location: "SF",
-          decision: "new",
-          decisionReason: "",
-          matchedOpportunityIds: [],
-          lastVerified: new Date().toISOString(),
-          structuredData: "{}"
-        }
-      ]
+    vi.mocked(startResearchRun).mockResolvedValue({
+      id: "run_2",
+      runName: "Startup Search",
+      targetType: "startup",
+      source: "manual",
+      queryText: "startups",
+      filtersUsed: "",
+      profileIds: ["prof_1"],
+      runDate: new Date().toISOString(),
+      status: "running",
+      notes: "",
+      resultCount: 0,
+      importedCount: 0
     });
+    vi.mocked(executeResearchRun).mockResolvedValue([]);
 
     const form = new FormData();
     form.set("profileId", "prof_1");
@@ -450,5 +490,6 @@ describe("workflow endpoints", () => {
 
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toContain("status=success");
+    expect(vi.mocked(startResearchRun)).toHaveBeenCalled();
   });
 });

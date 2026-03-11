@@ -4,6 +4,29 @@ import {
   listRecords,
   updateRecord
 } from "@/lib/airtable/client";
+import { normalizeCategoryTag, normalizeCategoryTags } from "@/lib/category-tags";
+import {
+  fromAirtableChannel,
+  fromAirtableDraftStatus,
+  fromAirtableDraftType,
+  fromAirtableFindingDecision,
+  fromAirtableOutcomeStatus,
+  fromAirtableOpportunityStage,
+  fromAirtableOutreachEventType,
+  fromAirtablePriority,
+  fromAirtableSearchRunStatus,
+  fromAirtableTargetType,
+  toAirtableChannel,
+  toAirtableDraftStatus,
+  toAirtableDraftType,
+  toAirtableFindingDecision,
+  toAirtableOutcomeStatus,
+  toAirtableOpportunityStage,
+  toAirtableOutreachEventType,
+  toAirtablePriority,
+  toAirtableSearchRunStatus,
+  toAirtableTargetType
+} from "@/lib/airtable/options";
 import { getEnv } from "@/lib/env";
 import type {
   Contact,
@@ -69,13 +92,13 @@ function mapSearchRun(record: { id: string; fields: AirtableFields }): SearchRun
   return {
     id: record.id,
     runName: asString(record.fields["Run Name"]),
-    targetType: asString(record.fields["Target Type"]) as TargetType,
+    targetType: fromAirtableTargetType(asString(record.fields["Target Type"])),
     source: asString(record.fields["Source"]),
     queryText: asString(record.fields["Query Text"]),
     filtersUsed: asString(record.fields["Filters Used"]),
     profileIds: asLinkedIds(record.fields["Profile"]),
     runDate: toIsoDate(record.fields["Run Date"]),
-    status: asString(record.fields["Status"]) as SearchRunStatus,
+    status: fromAirtableSearchRunStatus(asString(record.fields["Status"])),
     notes: asString(record.fields["Notes"]),
     resultCount: asNumber(record.fields["Result Count"]),
     importedCount: asNumber(record.fields["Imported Count"])
@@ -89,12 +112,14 @@ function mapFinding(record: { id: string; fields: AirtableFields }): Finding {
     url: asString(record.fields["URL"]),
     source: asString(record.fields["Source"]),
     snippet: asString(record.fields["Snippet"]),
-    targetType: asString(record.fields["Target Type"]) as TargetType,
+    targetType: fromAirtableTargetType(asString(record.fields["Target Type"])),
     searchRunIds: asLinkedIds(record.fields["Search Run"]),
     candidateName: asString(record.fields["Candidate Name"]),
     categoryTags: asStringArray(record.fields["Category Tags"]),
     location: asString(record.fields["Location"]),
-    decision: asString(record.fields["Decision"]) as FindingDecision | "",
+    decision: record.fields["Decision"]
+      ? fromAirtableFindingDecision(asString(record.fields["Decision"]))
+      : "",
     decisionReason: asString(record.fields["Decision Reason"]),
     matchedOpportunityIds: asLinkedIds(record.fields["Matched Opportunity"]),
     lastVerified: toIsoDate(record.fields["Last Verified"]),
@@ -106,10 +131,10 @@ function mapOpportunity(record: { id: string; fields: AirtableFields }): Opportu
   return {
     id: record.id,
     name: asString(record.fields["Name"]),
-    targetType: asString(record.fields["Target Type"]) as TargetType,
-    stage: asString(record.fields["Stage"]) as OpportunityStage,
+    targetType: fromAirtableTargetType(asString(record.fields["Target Type"])),
+    stage: fromAirtableOpportunityStage(asString(record.fields["Stage"])),
     fitScore: asNumber(record.fields["Fit Score"]),
-    priority: asString(record.fields["Priority"]) as Priority,
+    priority: fromAirtablePriority(asString(record.fields["Priority"])),
     whyFit: asString(record.fields["Why Fit"]),
     statusSummary: asString(record.fields["Status Summary"]),
     primaryCategory: asString(record.fields["Primary Category"]),
@@ -118,11 +143,10 @@ function mapOpportunity(record: { id: string; fields: AirtableFields }): Opportu
     nextAction: asString(record.fields["Next Action"]),
     nextFollowUpDate: toIsoDate(record.fields["Next Follow-Up Date"]),
     lastActivityDate: toIsoDate(record.fields["Last Activity Date"]),
-    outcome: asString(record.fields["Outcome"]),
+    outcome: record.fields["Outcome"]
+      ? fromAirtableOutcomeStatus(asString(record.fields["Outcome"]))
+      : "",
     owner: asString(record.fields["Owner"]),
-    openClosed: (asString(record.fields["Open/Closed"]) || "open") as
-      | "open"
-      | "closed",
     profileIds: asLinkedIds(record.fields["Profile"]),
     relatedFindingIds: asLinkedIds(record.fields["Related Findings"])
   };
@@ -203,12 +227,12 @@ function mapDraft(record: { id: string; fields: AirtableFields }): Draft {
     opportunityIds: asLinkedIds(record.fields["Opportunity"]),
     contactIds: asLinkedIds(record.fields["Contact"]),
     profileIds: asLinkedIds(record.fields["Profile"]),
-    draftType: asString(record.fields["Draft Type"]) as DraftType,
+    draftType: fromAirtableDraftType(asString(record.fields["Draft Type"])),
     subject: asString(record.fields["Subject"]),
     body: asString(record.fields["Body"]),
     personalizationHook: asString(record.fields["Personalization Hook"]),
     callToAction: asString(record.fields["Call To Action"]),
-    status: asString(record.fields["Status"]) as Draft["status"],
+    status: fromAirtableDraftStatus(asString(record.fields["Status"])),
     generatedAt: toIsoDate(record.fields["Generated At"]),
     sourceSnapshot: asString(record.fields["Source Snapshot"]),
     version: asNumber(record.fields["Version"])
@@ -225,9 +249,9 @@ function mapOutreachEvent(record: {
     opportunityIds: asLinkedIds(record.fields["Opportunity"]),
     contactIds: asLinkedIds(record.fields["Contact"]),
     draftIds: asLinkedIds(record.fields["Draft"]),
-    eventType: asString(record.fields["Event Type"]) as OutreachEvent["eventType"],
+    eventType: fromAirtableOutreachEventType(asString(record.fields["Event Type"])),
     eventDate: toIsoDate(record.fields["Event Date"]),
-    channel: (asString(record.fields["Channel"]) || "email") as OutreachEvent["channel"],
+    channel: fromAirtableChannel(asString(record.fields["Channel"]) || "Email"),
     summary: asString(record.fields["Summary"]),
     rawReply: asString(record.fields["Raw Reply"]),
     outcomeChange: asString(record.fields["Outcome Change"]),
@@ -303,13 +327,13 @@ export async function createSearchRun(input: {
 }) {
   const record = await createRecord(tables.searchRuns, {
     "Run Name": input.runName,
-    "Target Type": input.targetType,
+    "Target Type": toAirtableTargetType(input.targetType),
     Source: input.source,
     "Query Text": input.queryText,
     "Filters Used": input.filtersUsed,
     Profile: input.profileId ? [input.profileId] : undefined,
     "Run Date": new Date().toISOString(),
-    Status: input.status,
+    Status: toAirtableSearchRunStatus(input.status),
     Notes: input.notes,
     "Result Count": 0,
     "Imported Count": 0
@@ -332,7 +356,7 @@ export async function updateSearchRun(
   }>
 ) {
   const record = await updateRecord(tables.searchRuns, searchRunId, {
-    Status: input.status,
+    Status: input.status ? toAirtableSearchRunStatus(input.status) : undefined,
     Notes: input.notes,
     "Result Count": input.resultCount,
     "Imported Count": input.importedCount
@@ -351,17 +375,18 @@ export async function getFinding(findingId: string) {
 }
 
 export async function createFinding(input: Omit<Finding, "id">) {
+  const categoryTags = normalizeCategoryTags(input.categoryTags);
   const record = await createRecord(tables.findings, {
     Title: input.title,
     URL: input.url,
     Source: input.source,
     Snippet: input.snippet,
-    "Target Type": input.targetType,
+    "Target Type": toAirtableTargetType(input.targetType),
     "Search Run": input.searchRunIds,
     "Candidate Name": input.candidateName,
-    "Category Tags": input.categoryTags,
+    "Category Tags": categoryTags.length > 0 ? categoryTags : undefined,
     Location: input.location,
-    Decision: input.decision || undefined,
+    Decision: input.decision ? toAirtableFindingDecision(input.decision) : undefined,
     "Decision Reason": input.decisionReason,
     "Matched Opportunity": input.matchedOpportunityIds,
     "Last Verified": input.lastVerified || undefined,
@@ -380,7 +405,7 @@ export async function updateFinding(
   }>
 ) {
   const record = await updateRecord(tables.findings, findingId, {
-    Decision: input.decision,
+    Decision: input.decision ? toAirtableFindingDecision(input.decision) : undefined,
     "Decision Reason": input.decisionReason,
     "Matched Opportunity": input.matchedOpportunityIds,
     "Structured Data": input.structuredData
@@ -399,22 +424,25 @@ export async function getOpportunity(opportunityId: string) {
 }
 
 export async function createOpportunity(input: Omit<Opportunity, "id" | "lastActivityDate">) {
+  const categoryTags = normalizeCategoryTags(input.categoryTags);
+  const primaryCategory = input.primaryCategory
+    ? normalizeCategoryTag(input.primaryCategory)
+    : null;
   const record = await createRecord(tables.opportunities, {
     Name: input.name,
-    "Target Type": input.targetType,
-    Stage: input.stage,
+    "Target Type": toAirtableTargetType(input.targetType),
+    Stage: toAirtableOpportunityStage(input.stage),
     "Fit Score": input.fitScore,
-    Priority: input.priority,
+    Priority: toAirtablePriority(input.priority),
     "Why Fit": input.whyFit,
     "Status Summary": input.statusSummary,
-    "Primary Category": input.primaryCategory,
-    "Category Tags": input.categoryTags,
+    "Primary Category": primaryCategory || undefined,
+    "Category Tags": categoryTags.length > 0 ? categoryTags : undefined,
     "Primary Contact": input.primaryContactIds,
     "Next Action": input.nextAction,
     "Next Follow-Up Date": input.nextFollowUpDate || undefined,
-    Outcome: input.outcome,
+    Outcome: input.outcome ? toAirtableOutcomeStatus(input.outcome) : undefined,
     Owner: input.owner || getEnv().appOwner,
-    "Open/Closed": input.openClosed,
     Profile: input.profileIds,
     "Related Findings": input.relatedFindingIds
   });
@@ -431,21 +459,19 @@ export async function updateOpportunity(
     statusSummary: string;
     nextAction: string;
     nextFollowUpDate: string;
-    outcome: string;
-    openClosed: "open" | "closed";
+    outcome: "open" | "closed";
     primaryContactIds: string[];
   }>
 ) {
   const record = await updateRecord(tables.opportunities, opportunityId, {
-    Stage: input.stage,
+    Stage: input.stage ? toAirtableOpportunityStage(input.stage) : undefined,
     "Fit Score": input.fitScore,
-    Priority: input.priority,
+    Priority: input.priority ? toAirtablePriority(input.priority) : undefined,
     "Why Fit": input.whyFit,
     "Status Summary": input.statusSummary,
     "Next Action": input.nextAction,
     "Next Follow-Up Date": input.nextFollowUpDate || undefined,
-    Outcome: input.outcome,
-    "Open/Closed": input.openClosed,
+    Outcome: input.outcome ? toAirtableOutcomeStatus(input.outcome) : undefined,
     "Primary Contact": input.primaryContactIds
   });
   return mapOpportunity(record);
@@ -490,12 +516,12 @@ export async function createDraft(input: Omit<Draft, "id">) {
     Opportunity: input.opportunityIds,
     Contact: input.contactIds,
     Profile: input.profileIds,
-    "Draft Type": input.draftType,
+    "Draft Type": toAirtableDraftType(input.draftType),
     Subject: input.subject,
     Body: input.body,
     "Personalization Hook": input.personalizationHook,
     "Call To Action": input.callToAction,
-    Status: input.status,
+    Status: toAirtableDraftStatus(input.status),
     "Generated At": input.generatedAt,
     "Source Snapshot": input.sourceSnapshot,
     Version: input.version
@@ -519,9 +545,9 @@ export async function createOutreachEvent(input: Omit<OutreachEvent, "id">) {
     Opportunity: input.opportunityIds,
     Contact: input.contactIds,
     Draft: input.draftIds,
-    "Event Type": input.eventType,
+    "Event Type": toAirtableOutreachEventType(input.eventType),
     "Event Date": input.eventDate,
-    Channel: input.channel,
+    Channel: toAirtableChannel(input.channel),
     Summary: input.summary,
     "Raw Reply": input.rawReply,
     "Outcome Change": input.outcomeChange,

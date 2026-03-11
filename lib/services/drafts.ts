@@ -178,11 +178,12 @@ export async function logOutreachEvent(input: {
   await updateOpportunity(input.opportunityId, {
     stage: stageMap[input.eventType] as never,
     nextFollowUpDate: followUpDate,
-    outcome: input.outcomeChange,
-    openClosed:
+    outcome:
       input.eventType === "rejected" || input.eventType === "no_response_closed"
         ? "closed"
-        : "open",
+        : input.outcomeChange === "closed"
+          ? "closed"
+          : "open",
     nextAction:
       input.eventType === "meeting_requested"
         ? "Schedule meeting."

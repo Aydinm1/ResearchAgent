@@ -90,8 +90,7 @@ export const createOpportunitySchema = z.object({
   categoryTags: csvString,
   nextAction: optionalString,
   nextFollowUpDate: optionalString,
-  outcome: optionalString,
-  openClosed: z.enum(["open", "closed"]).default("open"),
+  outcome: z.enum(["open", "closed"]).optional().default("open"),
   profileId: optionalString,
   findingId: optionalString,
   structuredData: optionalString
@@ -115,8 +114,7 @@ export const updateOpportunitySchema = z.object({
   priority: z.enum(["high", "medium", "low"]).optional(),
   nextAction: optionalString,
   nextFollowUpDate: optionalString,
-  outcome: optionalString,
-  openClosed: z.enum(["open", "closed"]).optional(),
+  outcome: z.enum(["open", "closed"]).optional(),
   whyFit: optionalString,
   statusSummary: optionalString
 });

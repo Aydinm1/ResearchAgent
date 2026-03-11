@@ -106,11 +106,7 @@ export default async function OpportunityDetailPage({
             </label>
             <label>
               Outcome
-              <input name="outcome" defaultValue={opportunity.outcome} />
-            </label>
-            <label>
-              Open / closed
-              <select name="openClosed" defaultValue={opportunity.openClosed}>
+              <select name="outcome" defaultValue={opportunity.outcome || "open"}>
                 <option value="open">open</option>
                 <option value="closed">closed</option>
               </select>

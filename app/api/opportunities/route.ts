@@ -35,7 +35,6 @@ export async function POST(request: Request) {
       nextFollowUpDate: body.nextFollowUpDate,
       outcome: body.outcome,
       owner: getEnv().appOwner,
-      openClosed: body.openClosed,
       profileIds: body.profileId ? [body.profileId] : [],
       relatedFindingIds: body.findingId ? [body.findingId] : []
     });

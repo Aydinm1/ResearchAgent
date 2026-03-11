@@ -7,53 +7,53 @@
   },
   "enums": {
     "target_types": [
-      "lab",
-      "startup"
+      "Lab",
+      "Startup"
     ],
     "opportunity_stages": [
-      "discovered",
-      "researching",
-      "qualified",
-      "draft_ready",
-      "sent",
-      "follow_up_due",
-      "replied_positive",
-      "replied_neutral",
-      "replied_negative",
-      "closed"
+      "Discovered",
+      "Researching",
+      "Qualified",
+      "Draft Ready",
+      "Sent",
+      "Follow-Up Due",
+      "Replied Positive",
+      "Replied Neutral",
+      "Replied Negative",
+      "Closed"
     ],
     "priorities": [
-      "high",
-      "medium",
-      "low"
+      "High",
+      "Medium",
+      "Low"
     ],
     "findings_decisions": [
-      "new",
-      "keep",
-      "discard",
-      "duplicate"
+      "New",
+      "Keep",
+      "Discard",
+      "Duplicate"
     ],
     "draft_types": [
-      "initial",
-      "follow_up",
-      "reply"
+      "Initial",
+      "Follow Up",
+      "Reply"
     ],
     "draft_statuses": [
-      "draft",
-      "needs_review",
-      "ready",
-      "sent",
-      "obsolete"
+      "Draft",
+      "Needs Review",
+      "Ready",
+      "Sent",
+      "Obsolete"
     ],
     "event_types": [
-      "draft_created",
-      "sent",
-      "follow_up_sent",
-      "reply_received",
-      "meeting_requested",
-      "rejected",
-      "no_response_closed",
-      "note"
+      "Draft Created",
+      "Sent",
+      "Follow-Up Sent",
+      "Reply Received",
+      "Meeting Requested",
+      "Rejected",
+      "No Response Closed",
+      "Note"
     ],
     "contact_types": [
       "professor",
@@ -354,19 +354,15 @@
         },
         {
           "name": "Outcome",
-          "type": "singleLineText"
+          "type": "singleSelect",
+          "options": [
+            "Open",
+            "Closed"
+          ]
         },
         {
           "name": "Owner",
           "type": "singleLineText"
-        },
-        {
-          "name": "Open/Closed",
-          "type": "singleSelect",
-          "options": [
-            "open",
-            "closed"
-          ]
         },
         {
           "name": "Profile",
@@ -753,7 +749,7 @@
     {
       "table": "Opportunities",
       "name": "Closed / Not a Fit",
-      "filter": "Open/Closed = closed"
+      "filter": "Outcome = Closed"
     }
   ],
   "recommended_automations": [

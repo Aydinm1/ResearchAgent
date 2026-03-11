@@ -42,15 +42,15 @@ Create these views first:
 
 ### Opportunities
 
-- `Labs to Review`: `Target Type = lab` and `Stage` is one of `discovered`, `researching`, `qualified`
-- `Startups to Review`: `Target Type = startup` and `Stage` is one of `discovered`, `researching`, `qualified`
-- `Sent / Awaiting Reply`: `Stage` is `sent` or `follow_up_due`
-- `Positive Replies`: `Stage = replied_positive`
-- `Closed / Not a Fit`: `Open/Closed = closed`
+- `Labs to Review`: `Target Type = Lab` and `Stage` is one of `Discovered`, `Researching`, `Qualified`
+- `Startups to Review`: `Target Type = Startup` and `Stage` is one of `Discovered`, `Researching`, `Qualified`
+- `Sent / Awaiting Reply`: `Stage` is `Sent` or `Follow-Up Due`
+- `Positive Replies`: `Stage = Replied Positive`
+- `Closed / Not a Fit`: `Outcome = Closed`
 
 ### Drafts
 
-- `Draft Ready`: `Status` is `needs_review` or `ready`
+- `Draft Ready`: `Status` is `Needs Review` or `Ready`
 
 ## 4. Recommended Automations
 
@@ -61,18 +61,18 @@ Create these views first:
 
 ### Draft creation readiness
 
-- Trigger: when an `Opportunities` row has `Profile`, `Primary Contact`, and `Stage = qualified`
+- Trigger: when an `Opportunities` row has `Profile`, `Primary Contact`, and `Stage = Qualified`
 - Action: create a `Drafts` row with `Status = draft`
 
 ### Send event updates stage
 
-- Trigger: when `Outreach Events.Event Type = sent`
-- Action: update linked `Opportunities.Stage` to `sent`
+- Trigger: when `Outreach Events.Event Type = Sent`
+- Action: update linked `Opportunities.Stage` to `Sent`
 - Action: set `Opportunities.Next Follow-Up Date` to 7 days after `Event Date` unless already set
 
 ### Reply event updates status
 
-- Trigger: when `Outreach Events.Event Type = reply_received`
+- Trigger: when `Outreach Events.Event Type = Reply Received`
 - Action: update linked `Opportunities.Stage` based on sentiment
 - Action: update `Outcome` and `Contacts.Response Sentiment`
 
@@ -95,18 +95,18 @@ These fields are marked as computed in the schema and should be implemented as r
 
 - `Last Contacted`
   - Roll up `Outreach Events -> Event Date`
-  - Restrict to event types `sent` and `follow_up_sent`
+  - Restrict to event types `Sent` and `Follow-Up Sent`
 
 - `Last Reply Date`
   - Roll up `Outreach Events -> Event Date`
-  - Restrict to event type `reply_received`
+  - Restrict to event type `Reply Received`
 
 If you want a formula field for overdue follow-ups on `Opportunities`, add:
 
 ```text
 IF(
   AND(
-    {Open/Closed} = "open",
+    {Outcome} = "Open",
     {Next Follow-Up Date},
     {Next Follow-Up Date} <= TODAY(),
     OR({Stage} = "sent", {Stage} = "follow_up_due")

@@ -58,6 +58,8 @@ export type OpportunityStage =
 
 export type Priority = "high" | "medium" | "low";
 
+export type OutcomeStatus = "open" | "closed";
+
 export type SearchRunStatus = "queued" | "running" | "completed" | "failed";
 
 export type FindingDecision = "new" | "keep" | "discard" | "duplicate";
@@ -152,9 +154,8 @@ export type Opportunity = {
   nextAction: string;
   nextFollowUpDate: string;
   lastActivityDate: string;
-  outcome: string;
+  outcome: OutcomeStatus | "";
   owner: string;
-  openClosed: "open" | "closed";
   profileIds: EntityId[];
   relatedFindingIds: EntityId[];
 };

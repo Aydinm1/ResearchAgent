@@ -35,8 +35,7 @@ export async function PATCH(
         statusSummary: body.statusSummary,
         nextAction: body.nextAction,
         nextFollowUpDate: body.nextFollowUpDate,
-        outcome: body.outcome,
-        openClosed: body.openClosed
+        outcome: body.outcome
       })
     );
   } catch (error) {
@@ -58,8 +57,7 @@ export async function POST(
       statusSummary: body.statusSummary,
       nextAction: body.nextAction,
       nextFollowUpDate: body.nextFollowUpDate,
-      outcome: body.outcome,
-      openClosed: body.openClosed
+      outcome: body.outcome
     });
     if (prefersJson(request)) {
       return NextResponse.json(opportunity);

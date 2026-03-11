@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 
 export async function parseRequestBody<T>(
@@ -43,4 +43,16 @@ export function redirectWithFlash(
 export function prefersJson(request: Request) {
   const contentType = request.headers.get("content-type") || "";
   return contentType.includes("application/json");
+}
+
+export function scheduleAfterResponse(task: () => Promise<void> | void) {
+  try {
+    after(async () => {
+      await task();
+    });
+  } catch {
+    queueMicrotask(() => {
+      void Promise.resolve(task()).catch(() => undefined);
+    });
+  }
 }

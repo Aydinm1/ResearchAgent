@@ -3,27 +3,44 @@ import {
   jsonError,
   parseRequestBody,
   prefersJson,
-  redirectWithFlash
+  redirectWithFlash,
+  scheduleAfterResponse
 } from "@/lib/http";
-import { runResearch } from "@/lib/services/research";
+import { executeResearchRun, startResearchRun } from "@/lib/services/research";
 import { runResearchSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
     const body = await parseRequestBody(request, runResearchSchema);
-    const result = await runResearch({
+    const searchRun = await startResearchRun({
       targetType: "lab",
       profileId: body.profileId,
       queryText: body.queryText,
       filtersUsed: body.filtersUsed,
       maxResults: body.maxResults || 6
     });
+    scheduleAfterResponse(async () => {
+      await executeResearchRun({
+        targetType: "lab",
+        profileId: body.profileId,
+        queryText: body.queryText,
+        filtersUsed: body.filtersUsed,
+        maxResults: body.maxResults || 6,
+        searchRunId: searchRun.id
+      }).catch(() => undefined);
+    });
     if (prefersJson(request)) {
-      return NextResponse.json(result, { status: 201 });
+      return NextResponse.json(
+        {
+          searchRun,
+          message: "Lab research started. Status will update automatically."
+        },
+        { status: 202 }
+      );
     }
-    return redirectWithFlash(request, "/findings", {
+    return redirectWithFlash(request, "/search-runs", {
       status: "success",
-      message: `Lab research finished. Imported ${result.findings.length} findings.`
+      message: "Lab research started. Status will update automatically."
     });
   } catch (error) {
     const message =
