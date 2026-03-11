@@ -139,7 +139,7 @@ export function ResearchRunForm({
       </button>
       {isSubmitting ? (
         <p className="muted">
-          Research run is starting. The previous runs list will update in place.
+          Research run is starting. Live updates will stream into the run list.
         </p>
       ) : null}
     </form>

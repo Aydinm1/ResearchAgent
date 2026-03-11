@@ -3,11 +3,8 @@ import { safeJsonParse } from "@/lib/utils";
 export type SearchRunProgressStepKey =
   | "run_created"
   | "load_profile"
-  | "openai_request"
-  | "web_research"
-  | "analyze_sources"
-  | "format_response"
-  | "parse_results"
+  | "discover_candidates"
+  | "enrich_candidates"
   | "import_findings"
   | "finished";
 
@@ -31,11 +28,8 @@ export type SearchRunProgress = {
 const stepDefinitions: Array<{ key: SearchRunProgressStepKey; label: string }> = [
   { key: "run_created", label: "Run created" },
   { key: "load_profile", label: "Load profile" },
-  { key: "openai_request", label: "Send OpenAI request" },
-  { key: "web_research", label: "Web research" },
-  { key: "analyze_sources", label: "Analyze sources" },
-  { key: "format_response", label: "Format response" },
-  { key: "parse_results", label: "Parse results" },
+  { key: "discover_candidates", label: "Discovery agent" },
+  { key: "enrich_candidates", label: "Enrichment agents" },
   { key: "import_findings", label: "Import findings" },
   { key: "finished", label: "Finished" }
 ];

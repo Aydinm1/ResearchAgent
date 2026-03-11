@@ -33,6 +33,11 @@
       "Discard",
       "Duplicate"
     ],
+    "ai_qualifications": [
+      "Promote",
+      "Review",
+      "Discard"
+    ],
     "draft_types": [
       "Initial",
       "Follow Up",
@@ -280,6 +285,37 @@
         {
           "name": "Last Verified",
           "type": "date"
+        },
+        {
+          "name": "AI Fit Score",
+          "type": "number"
+        },
+        {
+          "name": "AI Priority",
+          "type": "singleSelect",
+          "options": "$priorities"
+        },
+        {
+          "name": "AI Qualification",
+          "type": "singleSelect",
+          "options": "$ai_qualifications"
+        },
+        {
+          "name": "AI Reasoning",
+          "type": "longText"
+        },
+        {
+          "name": "AI Confidence",
+          "type": "number"
+        },
+        {
+          "name": "AI Reviewed At",
+          "type": "dateTime"
+        },
+        {
+          "name": "AI Profile",
+          "type": "linkedRecord",
+          "linked_table": "Profiles"
         },
         {
           "name": "Structured Data",

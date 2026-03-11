@@ -70,7 +70,6 @@ export function SearchRunDetailClient({
 }: SearchRunDetailClientProps) {
   const [searchRun, setSearchRun] = useState(initialSearchRun);
   const [findings, setFindings] = useState(initialFindings);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const shouldPoll = searchRun.status === "running" || searchRun.status === "queued";
   const progress = parseSearchRunProgress(searchRun.notes);
@@ -80,42 +79,42 @@ export function SearchRunDetailClient({
       return undefined;
     }
 
-    let cancelled = false;
+    const eventSource = new EventSource(
+      `/api/search-runs/events?searchRunId=${encodeURIComponent(searchRun.id)}`
+    );
 
-    async function refresh() {
-      try {
-        setIsRefreshing(true);
-        const response = await fetch(`/api/search-runs/${searchRun.id}`, {
-          cache: "no-store"
-        });
-        if (!response.ok) {
-          return;
-        }
-        const payload = (await response.json()) as {
-          findings: Finding[];
-          searchRun: SearchRun;
-        };
-        if (!cancelled) {
-          setSearchRun(payload.searchRun);
-          setFindings(payload.findings);
-        }
-      } catch {
-        // Ignore polling failures and retry on the next cycle.
-      } finally {
-        if (!cancelled) {
-          setIsRefreshing(false);
-        }
-      }
-    }
+    const handleSearchRunUpdate = (event: MessageEvent<string>) => {
+      const payload = JSON.parse(event.data) as {
+        searchRun: SearchRun;
+      };
+      setSearchRun(payload.searchRun);
+    };
 
-    void refresh();
-    const intervalId = window.setInterval(() => {
-      void refresh();
-    }, 2500);
+    const handleFindingCreated = (event: MessageEvent<string>) => {
+      const payload = JSON.parse(event.data) as {
+        finding: Finding;
+      };
+      setFindings((current) => {
+        if (current.some((finding) => finding.id === payload.finding.id)) {
+          return current;
+        }
+        return [...current, payload.finding];
+      });
+    };
+
+    eventSource.addEventListener("search-run.updated", handleSearchRunUpdate as EventListener);
+    eventSource.addEventListener("finding.created", handleFindingCreated as EventListener);
 
     return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
+      eventSource.removeEventListener(
+        "search-run.updated",
+        handleSearchRunUpdate as EventListener
+      );
+      eventSource.removeEventListener(
+        "finding.created",
+        handleFindingCreated as EventListener
+      );
+      eventSource.close();
     };
   }, [searchRun.id, shouldPoll]);
 
@@ -167,7 +166,7 @@ export function SearchRunDetailClient({
               These updates are live run stages. During OpenAI web search, some steps are estimated while the response is still in flight.
             </p>
           ) : null}
-          {shouldPoll ? <p className="muted">{isRefreshing ? "Refreshing..." : "Auto-refreshing while this run is active."}</p> : null}
+          {shouldPoll ? <p className="muted">Streaming live updates while this run is active.</p> : null}
         </article>
 
         <article className="content-panel">

@@ -1,4 +1,5 @@
 import type {
+  AiQualification,
   DraftStatus,
   DraftType,
   FindingDecision,
@@ -107,6 +108,21 @@ const findingDecisionFromAirtable: Record<string, FindingDecision> = {
   keep: "keep",
   discard: "discard",
   duplicate: "duplicate"
+};
+
+const aiQualificationToAirtable: Record<AiQualification, string> = {
+  promote: "Promote",
+  review: "Review",
+  discard: "Discard"
+};
+
+const aiQualificationFromAirtable: Record<string, AiQualification> = {
+  Promote: "promote",
+  Review: "review",
+  Discard: "discard",
+  promote: "promote",
+  review: "review",
+  discard: "discard"
 };
 
 const draftTypeToAirtable: Record<DraftType, string> = {
@@ -240,6 +256,14 @@ export function toAirtableFindingDecision(value: FindingDecision) {
 
 export function fromAirtableFindingDecision(value: string): FindingDecision {
   return findingDecisionFromAirtable[value] || "new";
+}
+
+export function toAirtableAiQualification(value: AiQualification) {
+  return aiQualificationToAirtable[value];
+}
+
+export function fromAirtableAiQualification(value: string): AiQualification {
+  return aiQualificationFromAirtable[value] || "review";
 }
 
 export function toAirtableDraftType(value: DraftType) {

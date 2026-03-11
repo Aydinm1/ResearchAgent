@@ -5,6 +5,19 @@ import { getConfigurationStatus } from "@/lib/env";
 import { getDashboardData } from "@/lib/services/app-data";
 import { formatDate, parseJsonBlock } from "@/lib/utils";
 
+function aiRecommendationRank(value: string) {
+  switch (value) {
+    case "promote":
+      return 0;
+    case "review":
+      return 1;
+    case "discard":
+      return 2;
+    default:
+      return 3;
+  }
+}
+
 export default async function FindingsPage({
   searchParams
 }: {
@@ -14,6 +27,7 @@ export default async function FindingsPage({
     search?: string;
     targetType?: string;
     decision?: string;
+    aiQualification?: string;
   }>;
 }) {
   const data = await getDashboardData();
@@ -23,6 +37,7 @@ export default async function FindingsPage({
   const search = (params.search || "").toLowerCase();
   const targetType = params.targetType || "all";
   const decision = params.decision || "all";
+  const aiQualification = params.aiQualification || "all";
   const filteredFindings = data.findings.filter((finding) => {
     const matchesSearch =
       !search ||
@@ -32,8 +47,28 @@ export default async function FindingsPage({
     const matchesType = targetType === "all" || finding.targetType === targetType;
     const findingDecision = finding.decision || "new";
     const matchesDecision = decision === "all" || findingDecision === decision;
-    return matchesSearch && matchesType && matchesDecision;
+    const aiDecision = finding.aiQualification || "unreviewed";
+    const matchesAiQualification =
+      aiQualification === "all" || aiDecision === aiQualification;
+    return matchesSearch && matchesType && matchesDecision && matchesAiQualification;
+  }).sort((left, right) => {
+    const aiRankDelta =
+      aiRecommendationRank(left.aiQualification || "") -
+      aiRecommendationRank(right.aiQualification || "");
+    if (aiRankDelta !== 0) {
+      return aiRankDelta;
+    }
+    if (right.aiFitScore !== left.aiFitScore) {
+      return right.aiFitScore - left.aiFitScore;
+    }
+    if (right.aiConfidence !== left.aiConfidence) {
+      return right.aiConfidence - left.aiConfidence;
+    }
+    return right.lastVerified.localeCompare(left.lastVerified);
   });
+  const batchFindingIds = filteredFindings
+    .filter((finding) => finding.decision === "new" || !finding.decision)
+    .map((finding) => finding.id);
 
   return (
     <main className="page-shell stack">
@@ -72,8 +107,43 @@ export default async function FindingsPage({
             <option value="discard">discard</option>
           </select>
         </label>
+        <label>
+          AI recommendation
+          <select defaultValue={aiQualification} name="aiQualification">
+            <option value="all">all</option>
+            <option value="promote">promote</option>
+            <option value="review">review</option>
+            <option value="discard">discard</option>
+            <option value="unreviewed">unreviewed</option>
+          </select>
+        </label>
         <button type="submit">Apply filters</button>
       </form>
+
+      {batchFindingIds.length > 0 && activeProfile ? (
+        <section className="content-panel">
+          <div className="list-card-top">
+            <div>
+              <h2 className="panel-title">AI Review Queue</h2>
+              <p className="muted">
+                Run AI fit ranking on the current filtered findings before promoting any of them.
+              </p>
+            </div>
+            <span className="pill">{batchFindingIds.length} findings</span>
+          </div>
+          <form
+            action="/api/findings/ai-review-batch?redirectTo=/findings"
+            className="inline-form"
+            method="post"
+          >
+            <input name="profileId" type="hidden" value={activeProfile.id} />
+            <input name="findingIds" type="hidden" value={batchFindingIds.join(",")} />
+            <button disabled={!config.airtable || !config.openai} type="submit">
+              Run AI review on filtered findings
+            </button>
+          </form>
+        </section>
+      ) : null}
 
       <section className="list-stack">
         {filteredFindings.length === 0 ? (
@@ -104,6 +174,41 @@ export default async function FindingsPage({
                 {structured.detailSummary ? (
                   <p className="muted">{structured.detailSummary}</p>
                 ) : null}
+                <div className="list-stack">
+                  <div className="list-card">
+                    <div className="list-card-top">
+                      <h3>AI fit review</h3>
+                      <span className="pill">{finding.aiQualification || "unreviewed"}</span>
+                    </div>
+                    <p className="muted">
+                      Score: {finding.aiFitScore || "Not scored"} | Priority:{" "}
+                      {finding.aiPriority || "Not set"} | Confidence:{" "}
+                      {finding.aiConfidence || "Not set"}
+                    </p>
+                    <p>
+                      {finding.aiReasoning ||
+                        "No AI review yet. Run AI review to score and rank this finding."}
+                    </p>
+                    {finding.aiReviewedAt ? (
+                      <p className="muted">
+                        Reviewed {formatDate(finding.aiReviewedAt)}
+                      </p>
+                    ) : null}
+                    {activeProfile ? (
+                      <form
+                        action={`/api/findings/${finding.id}/ai-review?redirectTo=/findings`}
+                        className="inline-form"
+                        method="post"
+                      >
+                        <input name="findingId" type="hidden" value={finding.id} />
+                        <input name="profileId" type="hidden" value={activeProfile.id} />
+                        <button disabled={!config.airtable || !config.openai} type="submit">
+                          {finding.aiReviewedAt ? "Re-run AI review" : "Run AI review"}
+                        </button>
+                      </form>
+                    ) : null}
+                  </div>
+                </div>
                 <p className="muted">
                   Tags: {finding.categoryTags.join(", ") || "None"} | Verified{" "}
                   {formatDate(finding.lastVerified)}
@@ -132,11 +237,17 @@ export default async function FindingsPage({
                   />
                   <label>
                     Fit score
-                    <input name="fitScore" type="number" min="0" max="100" defaultValue="80" />
+                    <input
+                      name="fitScore"
+                      type="number"
+                      min="0"
+                      max="100"
+                      defaultValue={finding.aiFitScore || 80}
+                    />
                   </label>
                   <label>
                     Priority
-                    <select name="priority" defaultValue="medium">
+                    <select name="priority" defaultValue={finding.aiPriority || "medium"}>
                       <option value="high">high</option>
                       <option value="medium">medium</option>
                       <option value="low">low</option>

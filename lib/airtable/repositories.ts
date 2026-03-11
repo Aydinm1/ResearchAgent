@@ -6,6 +6,7 @@ import {
 } from "@/lib/airtable/client";
 import { normalizeCategoryTag, normalizeCategoryTags } from "@/lib/category-tags";
 import {
+  fromAirtableAiQualification,
   fromAirtableChannel,
   fromAirtableDraftStatus,
   fromAirtableDraftType,
@@ -16,6 +17,7 @@ import {
   fromAirtablePriority,
   fromAirtableSearchRunStatus,
   fromAirtableTargetType,
+  toAirtableAiQualification,
   toAirtableChannel,
   toAirtableDraftStatus,
   toAirtableDraftType,
@@ -29,6 +31,7 @@ import {
 } from "@/lib/airtable/options";
 import { getEnv } from "@/lib/env";
 import type {
+  AiQualification,
   Contact,
   Draft,
   DraftType,
@@ -123,6 +126,17 @@ function mapFinding(record: { id: string; fields: AirtableFields }): Finding {
     decisionReason: asString(record.fields["Decision Reason"]),
     matchedOpportunityIds: asLinkedIds(record.fields["Matched Opportunity"]),
     lastVerified: toIsoDate(record.fields["Last Verified"]),
+    aiFitScore: asNumber(record.fields["AI Fit Score"]),
+    aiPriority: record.fields["AI Priority"]
+      ? fromAirtablePriority(asString(record.fields["AI Priority"]))
+      : "",
+    aiQualification: record.fields["AI Qualification"]
+      ? fromAirtableAiQualification(asString(record.fields["AI Qualification"]))
+      : "",
+    aiReasoning: asString(record.fields["AI Reasoning"]),
+    aiConfidence: asNumber(record.fields["AI Confidence"]),
+    aiReviewedAt: toIsoDate(record.fields["AI Reviewed At"]),
+    aiProfileIds: asLinkedIds(record.fields["AI Profile"]),
     structuredData: asString(record.fields["Structured Data"])
   };
 }
@@ -390,6 +404,15 @@ export async function createFinding(input: Omit<Finding, "id">) {
     "Decision Reason": input.decisionReason,
     "Matched Opportunity": input.matchedOpportunityIds,
     "Last Verified": input.lastVerified || undefined,
+    "AI Fit Score": input.aiFitScore || undefined,
+    "AI Priority": input.aiPriority ? toAirtablePriority(input.aiPriority) : undefined,
+    "AI Qualification": input.aiQualification
+      ? toAirtableAiQualification(input.aiQualification)
+      : undefined,
+    "AI Reasoning": input.aiReasoning,
+    "AI Confidence": input.aiConfidence || undefined,
+    "AI Reviewed At": input.aiReviewedAt || undefined,
+    "AI Profile": input.aiProfileIds,
     "Structured Data": input.structuredData
   });
   return mapFinding(record);
@@ -401,6 +424,13 @@ export async function updateFinding(
     decision: FindingDecision;
     decisionReason: string;
     matchedOpportunityIds: string[];
+    aiFitScore: number;
+    aiPriority: Priority;
+    aiQualification: AiQualification;
+    aiReasoning: string;
+    aiConfidence: number;
+    aiReviewedAt: string;
+    aiProfileIds: string[];
     structuredData: string;
   }>
 ) {
@@ -408,6 +438,15 @@ export async function updateFinding(
     Decision: input.decision ? toAirtableFindingDecision(input.decision) : undefined,
     "Decision Reason": input.decisionReason,
     "Matched Opportunity": input.matchedOpportunityIds,
+    "AI Fit Score": input.aiFitScore,
+    "AI Priority": input.aiPriority ? toAirtablePriority(input.aiPriority) : undefined,
+    "AI Qualification": input.aiQualification
+      ? toAirtableAiQualification(input.aiQualification)
+      : undefined,
+    "AI Reasoning": input.aiReasoning,
+    "AI Confidence": input.aiConfidence,
+    "AI Reviewed At": input.aiReviewedAt || undefined,
+    "AI Profile": input.aiProfileIds,
     "Structured Data": input.structuredData
   });
   return mapFinding(record);

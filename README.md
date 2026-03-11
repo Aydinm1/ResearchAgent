@@ -44,6 +44,27 @@ npm run lint
 npm run build
 ```
 
+## Live Airtable smoke tests
+
+The default test suite is mocked and does not hit Airtable. To run live Airtable checks against your real base:
+
+```bash
+npm run test:airtable
+```
+
+This suite is read-only by default and checks:
+- Airtable connectivity
+- required tables and field names against `airtable/base-schema.json`
+- real GET routes for profiles, search runs, findings, and opportunities
+
+If you also want one live write smoke test for `Search Runs`, set:
+
+```bash
+LIVE_AIRTABLE_WRITE_TESTS=true npm run test:airtable
+```
+
+That write smoke creates a temporary search run record in Airtable and is meant only for debugging schema/write failures.
+
 ## Key paths
 
 - [app/page.tsx](/Users/user/Documents/Coding/ResearchAgent/app/page.tsx)

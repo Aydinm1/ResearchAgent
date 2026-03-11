@@ -33,14 +33,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           searchRun,
-          message: "Lab research started. Status will update automatically."
+          message: "Lab research started. Live updates will stream automatically."
         },
         { status: 202 }
       );
     }
     return redirectWithFlash(request, "/search-runs", {
       status: "success",
-      message: "Lab research started. Status will update automatically."
+      message: "Lab research started. Live updates will stream automatically."
     });
   } catch (error) {
     const message =

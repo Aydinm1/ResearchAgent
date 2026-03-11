@@ -171,3 +171,13 @@ export const qualifyFindingSchema = z.object({
   priority: z.enum(["high", "medium", "low"]).default("medium"),
   fitScore: optionalNumber
 });
+
+export const aiReviewFindingSchema = z.object({
+  findingId: optionalString,
+  profileId: z.string().min(1)
+});
+
+export const aiReviewBatchSchema = z.object({
+  profileId: z.string().min(1),
+  findingIds: csvString
+});

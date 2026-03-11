@@ -17,6 +17,11 @@ vi.mock("@/lib/services/drafts", () => ({
   logOutreachEvent: vi.fn()
 }));
 
+vi.mock("@/lib/services/ai-review", () => ({
+  runAiReviewBatch: vi.fn(),
+  runAiReviewForFinding: vi.fn()
+}));
+
 vi.mock("@/lib/services/research", () => ({
   qualifyFinding: vi.fn(),
   startResearchRun: vi.fn(),
@@ -37,6 +42,10 @@ import {
 } from "@/lib/airtable/repositories";
 import { generateDraft, logOutreachEvent } from "@/lib/services/drafts";
 import {
+  runAiReviewBatch,
+  runAiReviewForFinding
+} from "@/lib/services/ai-review";
+import {
   executeResearchRun,
   qualifyFinding,
   startResearchRun
@@ -44,6 +53,8 @@ import {
 import { GET as getContacts, POST as postContacts } from "@/app/api/contacts/route";
 import { GET as getDrafts, POST as postDrafts } from "@/app/api/drafts/route";
 import { GET as getFindings } from "@/app/api/findings/route";
+import { POST as postBatchAiReview } from "@/app/api/findings/ai-review-batch/route";
+import { POST as postAiReviewFinding } from "@/app/api/findings/[id]/ai-review/route";
 import { POST as postQualifyFinding } from "@/app/api/findings/[id]/qualify/route";
 import { GET as getOpportunities } from "@/app/api/opportunities/route";
 import {
@@ -205,6 +216,13 @@ describe("workflow endpoints", () => {
         decisionReason: "",
         matchedOpportunityIds: [],
         lastVerified: new Date().toISOString(),
+        aiFitScore: 0,
+        aiPriority: "",
+        aiQualification: "",
+        aiReasoning: "",
+        aiConfidence: 0,
+        aiReviewedAt: "",
+        aiProfileIds: [],
         structuredData: "{}"
       }
     ]);
@@ -252,6 +270,91 @@ describe("workflow endpoints", () => {
         }
       ),
       { params: Promise.resolve({ id: "finding_1" }) }
+    );
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toContain("status=success");
+  });
+
+  it("runs AI review for a finding", async () => {
+    vi.mocked(runAiReviewForFinding).mockResolvedValue({
+      id: "finding_1",
+      title: "Lab",
+      url: "https://example.com/lab",
+      source: "google",
+      snippet: "Snippet",
+      targetType: "lab",
+      searchRunIds: ["run_1"],
+      candidateName: "Vision Lab",
+      categoryTags: ["ai_ml"],
+      location: "Davis",
+      decision: "new",
+      decisionReason: "",
+      matchedOpportunityIds: [],
+      lastVerified: new Date().toISOString(),
+      aiFitScore: 92,
+      aiPriority: "high",
+      aiQualification: "promote",
+      aiReasoning: "Strong alignment with the student profile.",
+      aiConfidence: 84,
+      aiReviewedAt: new Date().toISOString(),
+      aiProfileIds: ["prof_1"],
+      structuredData: "{}"
+    });
+
+    const form = new FormData();
+    form.set("findingId", "finding_1");
+    form.set("profileId", "prof_1");
+
+    const response = await postAiReviewFinding(
+      new Request("http://localhost/api/findings/finding_1/ai-review?redirectTo=/findings", {
+        method: "POST",
+        body: form
+      }),
+      { params: Promise.resolve({ id: "finding_1" }) }
+    );
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toContain("status=success");
+  });
+
+  it("runs batch AI review", async () => {
+    vi.mocked(runAiReviewBatch).mockResolvedValue([
+      {
+        id: "finding_1",
+        title: "Lab",
+        url: "https://example.com/lab",
+        source: "google",
+        snippet: "Snippet",
+        targetType: "lab",
+        searchRunIds: ["run_1"],
+        candidateName: "Vision Lab",
+        categoryTags: ["ai_ml"],
+        location: "Davis",
+        decision: "new",
+        decisionReason: "",
+        matchedOpportunityIds: [],
+        lastVerified: new Date().toISOString(),
+        aiFitScore: 92,
+        aiPriority: "high",
+        aiQualification: "promote",
+        aiReasoning: "Strong alignment with the student profile.",
+        aiConfidence: 84,
+        aiReviewedAt: new Date().toISOString(),
+        aiProfileIds: ["prof_1"],
+        structuredData: "{}"
+      }
+    ]);
+
+    const form = new FormData();
+    form.set("profileId", "prof_1");
+    form.set("findingIds", "finding_1,finding_2");
+
+    const response = await postBatchAiReview(
+      new Request("http://localhost/api/findings/ai-review-batch?redirectTo=/findings", {
+        method: "POST",
+        body: form
+      })
     );
 
     expect(response.status).toBe(303);
@@ -407,6 +510,13 @@ describe("workflow endpoints", () => {
         decisionReason: "",
         matchedOpportunityIds: [],
         lastVerified: new Date().toISOString(),
+        aiFitScore: 0,
+        aiPriority: "",
+        aiQualification: "",
+        aiReasoning: "",
+        aiConfidence: 0,
+        aiReviewedAt: "",
+        aiProfileIds: [],
         structuredData: "{}"
       }
     ]);

@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:airtable": "LIVE_AIRTABLE_TESTS=true vitest run tests/integration/airtable-live.test.ts"
   },
   "dependencies": {
     "next": "latest",

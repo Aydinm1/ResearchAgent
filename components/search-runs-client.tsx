@@ -23,19 +23,6 @@ function sortRuns(runs: SearchRun[]) {
   return [...runs].sort((left, right) => right.runDate.localeCompare(left.runDate));
 }
 
-function mergeRuns(current: SearchRun[], next: SearchRun[]) {
-  const optimisticRuns = current.filter((run) => run.id.startsWith("pending-"));
-  const merged = [...next];
-
-  for (const optimisticRun of optimisticRuns) {
-    if (!merged.some((run) => run.id === optimisticRun.id)) {
-      merged.push(optimisticRun);
-    }
-  }
-
-  return sortRuns(merged);
-}
-
 function statusLabel(status: SearchRun["status"]) {
   switch (status) {
     case "running":
@@ -85,33 +72,28 @@ export function SearchRunsClient({
       return undefined;
     }
 
-    let cancelled = false;
+    const eventSource = new EventSource("/api/search-runs/events");
 
-    async function refreshRuns() {
-      try {
-        const response = await fetch("/api/search-runs", {
-          cache: "no-store"
-        });
-        if (!response.ok) {
-          return;
-        }
-        const payload = (await response.json()) as SearchRun[];
-        if (!cancelled) {
-          setRuns((current) => mergeRuns(current, payload));
-        }
-      } catch {
-        // Ignore polling failures and try again on the next interval.
-      }
-    }
+    const handleSearchRunUpdate = (event: MessageEvent<string>) => {
+      const payload = JSON.parse(event.data) as {
+        searchRun: SearchRun;
+      };
+      setRuns((current) =>
+        sortRuns([
+          payload.searchRun,
+          ...current.filter((run) => run.id !== payload.searchRun.id)
+        ])
+      );
+    };
 
-    void refreshRuns();
-    const intervalId = window.setInterval(() => {
-      void refreshRuns();
-    }, 2500);
+    eventSource.addEventListener("search-run.updated", handleSearchRunUpdate as EventListener);
 
     return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
+      eventSource.removeEventListener(
+        "search-run.updated",
+        handleSearchRunUpdate as EventListener
+      );
+      eventSource.close();
     };
   }, [hasActiveRun]);
 

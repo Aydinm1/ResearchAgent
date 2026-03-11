@@ -64,6 +64,8 @@ export type SearchRunStatus = "queued" | "running" | "completed" | "failed";
 
 export type FindingDecision = "new" | "keep" | "discard" | "duplicate";
 
+export type AiQualification = "promote" | "review" | "discard";
+
 export type DraftType = "initial" | "follow_up" | "reply";
 
 export type DraftStatus = "draft" | "needs_review" | "ready" | "sent" | "obsolete";
@@ -136,6 +138,13 @@ export type Finding = {
   decisionReason: string;
   matchedOpportunityIds: EntityId[];
   lastVerified: string;
+  aiFitScore: number;
+  aiPriority: Priority | "";
+  aiQualification: AiQualification | "";
+  aiReasoning: string;
+  aiConfidence: number;
+  aiReviewedAt: string;
+  aiProfileIds: EntityId[];
   structuredData: string;
 };
 
