@@ -31,6 +31,7 @@ Use the workflow below as the system default:
 7. `Drafts` stores generated emails by version.
 8. `Outreach Events` is the timeline for every send, follow-up, and reply.
 9. `Findings.Structured Data` stores normalized research output used during qualification.
+10. `Findings.Source` should be plain text because it stores source labels like a lab name, domain, or source page title, not a fixed enum.
 
 ## 3. Required Views
 

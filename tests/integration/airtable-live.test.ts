@@ -10,11 +10,50 @@ type AirtableSchemaResponse = {
   tables: Array<{
     fields: Array<{
       name: string;
+      options?: {
+        choices?: Array<{
+          name: string;
+        }>;
+      };
       type: string;
     }>;
     name: string;
   }>;
 };
+
+type SchemaField = (typeof schema.tables)[number]["fields"][number];
+
+function normalizeExpectedFieldType(type: string) {
+  const typeAliases: Record<string, string> = {
+    linkedRecord: "multipleRecordLinks",
+    longText: "multilineText"
+  };
+
+  return typeAliases[type] || type;
+}
+
+function resolveSchemaOptions(field: SchemaField) {
+  if (!("options" in field) || !field.options) {
+    return null;
+  }
+
+  if (Array.isArray(field.options)) {
+    return field.options;
+  }
+
+  if (typeof field.options === "string" && field.options.startsWith("$")) {
+    const enumKey = field.options.slice(1) as keyof typeof schema.enums;
+    const values = schema.enums[enumKey];
+    return Array.isArray(values) ? values : null;
+  }
+
+  return null;
+}
+
+function findMissingExpectedOptions(expectedOptions: string[], actualOptions: string[]) {
+  const actualSet = new Set(actualOptions);
+  return expectedOptions.filter((option) => !actualSet.has(option));
+}
 
 const liveEnabled = process.env.LIVE_AIRTABLE_TESTS === "true";
 const writeEnabled = process.env.LIVE_AIRTABLE_WRITE_TESTS === "true";
@@ -65,12 +104,14 @@ describeLive("live Airtable integration", () => {
     const actualTables = new Map(
       airtableSchema.tables.map((table) => [
         table.name,
-        new Set(table.fields.map((field) => field.name))
+        new Map(table.fields.map((field) => [field.name, field]))
       ])
     );
 
     const missingTables: string[] = [];
     const missingFields: string[] = [];
+    const mismatchedFieldTypes: string[] = [];
+    const mismatchedSelectOptions: string[] = [];
 
     for (const table of schema.tables) {
       const actualFields = actualTables.get(table.name);
@@ -80,14 +121,47 @@ describeLive("live Airtable integration", () => {
       }
 
       for (const field of table.fields) {
-        if (!actualFields.has(field.name)) {
+        const actualField = actualFields.get(field.name);
+        if (!actualField) {
           missingFields.push(`${table.name}.${field.name}`);
+          continue;
+        }
+
+        const expectedType = normalizeExpectedFieldType(field.type);
+        if (actualField.type !== expectedType) {
+          mismatchedFieldTypes.push(
+            `${table.name}.${field.name} expected ${expectedType} but found ${actualField.type}`
+          );
+        }
+
+        if (field.type === "singleSelect" || field.type === "multipleSelects") {
+          const expectedOptions = resolveSchemaOptions(field) || [];
+          const actualOptions = (actualField.options?.choices || []).map((choice) => choice.name);
+
+          const missingExpectedOptions = findMissingExpectedOptions(
+            expectedOptions,
+            actualOptions
+          );
+
+          if (missingExpectedOptions.length > 0) {
+            mismatchedSelectOptions.push(
+              `${table.name}.${field.name} missing required options [${missingExpectedOptions.join(", ")}]; found [${actualOptions.join(", ")}]`
+            );
+          }
         }
       }
     }
 
     expect(missingTables, `Missing Airtable tables: ${missingTables.join(", ")}`).toEqual([]);
     expect(missingFields, `Missing Airtable fields: ${missingFields.join(", ")}`).toEqual([]);
+    expect(
+      mismatchedFieldTypes,
+      `Airtable fields with wrong types: ${mismatchedFieldTypes.join("; ")}`
+    ).toEqual([]);
+    expect(
+      mismatchedSelectOptions,
+      `Airtable select options mismatched: ${mismatchedSelectOptions.join("; ")}`
+    ).toEqual([]);
   });
 
   it("loads live profiles", async () => {

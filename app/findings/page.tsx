@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AiReviewAction } from "@/components/ai-review-action";
 import { ConfigBanner } from "@/components/config-banner";
 import { FlashBanner } from "@/components/flash-banner";
 import { getConfigurationStatus } from "@/lib/env";
@@ -131,17 +132,18 @@ export default async function FindingsPage({
             </div>
             <span className="pill">{batchFindingIds.length} findings</span>
           </div>
-          <form
-            action="/api/findings/ai-review-batch?redirectTo=/findings"
-            className="inline-form"
-            method="post"
-          >
-            <input name="profileId" type="hidden" value={activeProfile.id} />
-            <input name="findingIds" type="hidden" value={batchFindingIds.join(",")} />
-            <button disabled={!config.airtable || !config.openai} type="submit">
-              Run AI review on filtered findings
-            </button>
-          </form>
+          <AiReviewAction
+            action="/api/findings/ai-review-batch"
+            body={{
+              findingIds: batchFindingIds.join(","),
+              profileId: activeProfile.id
+            }}
+            buttonLabel="Run AI review on filtered findings"
+            disabled={!config.airtable || !config.openai}
+            loadingLabel="Running AI review..."
+            pendingMessage="AI review started for the filtered findings. Results will refresh here when finished."
+            successMessage="AI review completed. Refreshing findings..."
+          />
         </section>
       ) : null}
 
@@ -195,17 +197,18 @@ export default async function FindingsPage({
                       </p>
                     ) : null}
                     {activeProfile ? (
-                      <form
-                        action={`/api/findings/${finding.id}/ai-review?redirectTo=/findings`}
-                        className="inline-form"
-                        method="post"
-                      >
-                        <input name="findingId" type="hidden" value={finding.id} />
-                        <input name="profileId" type="hidden" value={activeProfile.id} />
-                        <button disabled={!config.airtable || !config.openai} type="submit">
-                          {finding.aiReviewedAt ? "Re-run AI review" : "Run AI review"}
-                        </button>
-                      </form>
+                      <AiReviewAction
+                        action={`/api/findings/${finding.id}/ai-review`}
+                        body={{
+                          findingId: finding.id,
+                          profileId: activeProfile.id
+                        }}
+                        buttonLabel={finding.aiReviewedAt ? "Re-run AI review" : "Run AI review"}
+                        disabled={!config.airtable || !config.openai}
+                        loadingLabel="Running AI review..."
+                        pendingMessage={`AI review started for ${finding.candidateName || finding.title}.`}
+                        successMessage="AI review completed. Refreshing findings..."
+                      />
                     ) : null}
                   </div>
                 </div>

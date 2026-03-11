@@ -40,7 +40,7 @@
     ],
     "draft_types": [
       "Initial",
-      "Follow Up",
+      "Follow-up",
       "Reply"
     ],
     "draft_statuses": [
@@ -61,24 +61,24 @@
       "Note"
     ],
     "contact_types": [
-      "professor",
-      "pi",
-      "postdoc",
-      "graduate_student",
-      "founder",
-      "recruiter",
-      "team_member"
+      "Professor",
+      "PI",
+      "Postdoc",
+      "Graduate Student",
+      "Founder",
+      "Recruiter",
+      "Team Member"
     ],
     "response_sentiments": [
-      "positive",
-      "neutral",
-      "negative"
+      "Positive",
+      "Neutral",
+      "Negative"
     ],
     "search_run_statuses": [
-      "queued",
-      "running",
-      "completed",
-      "failed"
+      "Queued",
+      "Running",
+      "Completed",
+      "Failed"
     ],
     "sources": [
       "uc_davis_site",
@@ -95,6 +95,7 @@
       "hci",
       "cognitive_science",
       "neuroscience",
+      "neurotech",
       "nlp",
       "robotics",
       "healthtech",
@@ -184,8 +185,7 @@
         },
         {
           "name": "Source",
-          "type": "singleSelect",
-          "options": "$sources"
+          "type": "singleLineText"
         },
         {
           "name": "Query Text",
@@ -238,8 +238,7 @@
         },
         {
           "name": "Source",
-          "type": "singleSelect",
-          "options": "$sources"
+          "type": "singleLineText"
         },
         {
           "name": "Snippet",
@@ -599,8 +598,8 @@
           "name": "Warm/Cold",
           "type": "singleSelect",
           "options": [
-            "warm",
-            "cold"
+            "Warm",
+            "Cold"
           ]
         },
         {
@@ -727,9 +726,9 @@
           "name": "Channel",
           "type": "singleSelect",
           "options": [
-            "email",
-            "linkedin",
-            "manual_note"
+            "Email",
+            "LinkedIn",
+            "Manual Note"
           ]
         },
         {

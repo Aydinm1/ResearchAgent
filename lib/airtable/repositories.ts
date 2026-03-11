@@ -8,6 +8,7 @@ import { normalizeCategoryTag, normalizeCategoryTags } from "@/lib/category-tags
 import {
   fromAirtableAiQualification,
   fromAirtableChannel,
+  fromAirtableContactType,
   fromAirtableDraftStatus,
   fromAirtableDraftType,
   fromAirtableFindingDecision,
@@ -15,10 +16,13 @@ import {
   fromAirtableOpportunityStage,
   fromAirtableOutreachEventType,
   fromAirtablePriority,
+  fromAirtableResponseSentiment,
   fromAirtableSearchRunStatus,
   fromAirtableTargetType,
+  fromAirtableWarmCold,
   toAirtableAiQualification,
   toAirtableChannel,
+  toAirtableContactType,
   toAirtableDraftStatus,
   toAirtableDraftType,
   toAirtableFindingDecision,
@@ -26,8 +30,10 @@ import {
   toAirtableOpportunityStage,
   toAirtableOutreachEventType,
   toAirtablePriority,
+  toAirtableResponseSentiment,
   toAirtableSearchRunStatus,
-  toAirtableTargetType
+  toAirtableTargetType,
+  toAirtableWarmCold
 } from "@/lib/airtable/options";
 import { getEnv } from "@/lib/env";
 import type {
@@ -221,14 +227,14 @@ function mapContact(record: { id: string; fields: AirtableFields }): Contact {
     opportunityIds: asLinkedIds(record.fields["Opportunity"]),
     email: asString(record.fields["Email"]),
     linkedIn: asString(record.fields["LinkedIn"]),
-    contactType: asString(record.fields["Contact Type"]) as Contact["contactType"],
+    contactType: fromAirtableContactType(asString(record.fields["Contact Type"])),
     primary: asBoolean(record.fields["Primary"]),
     confidence: asNumber(record.fields["Confidence"]),
-    warmCold: asString(record.fields["Warm/Cold"]) as Contact["warmCold"],
+    warmCold: fromAirtableWarmCold(asString(record.fields["Warm/Cold"])),
     lastContacted: toIsoDate(record.fields["Last Contacted"]),
     lastReplyDate: toIsoDate(record.fields["Last Reply Date"]),
-    responseSentiment: asString(
-      record.fields["Response Sentiment"]
+    responseSentiment: fromAirtableResponseSentiment(
+      asString(record.fields["Response Sentiment"])
     ) as ResponseSentiment | "",
     notes: asString(record.fields["Notes"])
   };
@@ -534,11 +540,15 @@ export async function createContact(input: Omit<Contact, "id" | "lastContacted" 
     Opportunity: input.opportunityIds,
     Email: input.email,
     LinkedIn: input.linkedIn,
-    "Contact Type": input.contactType || undefined,
+    "Contact Type": input.contactType
+      ? toAirtableContactType(input.contactType)
+      : undefined,
     Primary: input.primary,
     Confidence: input.confidence,
-    "Warm/Cold": input.warmCold || undefined,
-    "Response Sentiment": input.responseSentiment || undefined,
+    "Warm/Cold": input.warmCold ? toAirtableWarmCold(input.warmCold) : undefined,
+    "Response Sentiment": input.responseSentiment
+      ? toAirtableResponseSentiment(input.responseSentiment)
+      : undefined,
     Notes: input.notes
   });
   return mapContact(record);

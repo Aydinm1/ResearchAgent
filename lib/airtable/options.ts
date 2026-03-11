@@ -1,5 +1,6 @@
 import type {
   AiQualification,
+  ContactType,
   DraftStatus,
   DraftType,
   FindingDecision,
@@ -127,12 +128,13 @@ const aiQualificationFromAirtable: Record<string, AiQualification> = {
 
 const draftTypeToAirtable: Record<DraftType, string> = {
   initial: "Initial",
-  follow_up: "Follow Up",
+  follow_up: "Follow-up",
   reply: "Reply"
 };
 
 const draftTypeFromAirtable: Record<string, DraftType> = {
   Initial: "initial",
+  "Follow-up": "follow_up",
   "Follow Up": "follow_up",
   Reply: "reply",
   initial: "initial",
@@ -201,9 +203,66 @@ const channelFromAirtable = {
   Email: "email",
   LinkedIn: "linkedin",
   "Manual Note": "manual_note",
+  Phone: "email",
+  Other: "manual_note",
   email: "email",
   linkedin: "linkedin",
   manual_note: "manual_note"
+} as const;
+
+const contactTypeToAirtable: Record<ContactType, string> = {
+  professor: "Professor",
+  pi: "PI",
+  postdoc: "Postdoc",
+  graduate_student: "Graduate Student",
+  founder: "Founder",
+  recruiter: "Recruiter",
+  team_member: "Team Member"
+};
+
+const contactTypeFromAirtable: Record<string, ContactType> = {
+  Professor: "professor",
+  PI: "pi",
+  Postdoc: "postdoc",
+  "Graduate Student": "graduate_student",
+  Founder: "founder",
+  Recruiter: "recruiter",
+  "Team Member": "team_member",
+  professor: "professor",
+  pi: "pi",
+  postdoc: "postdoc",
+  graduate_student: "graduate_student",
+  founder: "founder",
+  recruiter: "recruiter",
+  team_member: "team_member"
+};
+
+const warmColdToAirtable = {
+  warm: "Warm",
+  cold: "Cold"
+} as const;
+
+const warmColdFromAirtable = {
+  Warm: "warm",
+  Cold: "cold",
+  warm: "warm",
+  cold: "cold"
+} as const;
+
+const responseSentimentToAirtable = {
+  positive: "Positive",
+  neutral: "Neutral",
+  negative: "Negative"
+} as const;
+
+const responseSentimentFromAirtable = {
+  Positive: "positive",
+  Neutral: "neutral",
+  Negative: "negative",
+  "No Reply": "",
+  positive: "positive",
+  neutral: "neutral",
+  negative: "negative"
 } as const;
 
 const outcomeStatusToAirtable: Record<OutcomeStatus, string> = {
@@ -296,6 +355,34 @@ export function toAirtableChannel(value: "email" | "linkedin" | "manual_note") {
 
 export function fromAirtableChannel(value: string): "email" | "linkedin" | "manual_note" {
   return channelFromAirtable[value as keyof typeof channelFromAirtable] || "email";
+}
+
+export function toAirtableContactType(value: ContactType) {
+  return contactTypeToAirtable[value];
+}
+
+export function fromAirtableContactType(value: string): ContactType | "" {
+  return contactTypeFromAirtable[value] || "";
+}
+
+export function toAirtableWarmCold(value: "warm" | "cold") {
+  return warmColdToAirtable[value];
+}
+
+export function fromAirtableWarmCold(value: string): "warm" | "cold" | "" {
+  return warmColdFromAirtable[value as keyof typeof warmColdFromAirtable] || "";
+}
+
+export function toAirtableResponseSentiment(value: "positive" | "neutral" | "negative") {
+  return responseSentimentToAirtable[value];
+}
+
+export function fromAirtableResponseSentiment(
+  value: string
+): "positive" | "neutral" | "negative" | "" {
+  return responseSentimentFromAirtable[
+    value as keyof typeof responseSentimentFromAirtable
+  ] || "";
 }
 
 export function toAirtableOutcomeStatus(value: OutcomeStatus) {
