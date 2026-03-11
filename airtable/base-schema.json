@@ -1,0 +1,797 @@
+{
+  "base_name": "Research Outreach CRM",
+  "version": "1.0.0",
+  "defaults": {
+    "follow_up_days": 7,
+    "active_profile_only": true
+  },
+  "enums": {
+    "target_types": [
+      "lab",
+      "startup"
+    ],
+    "opportunity_stages": [
+      "discovered",
+      "researching",
+      "qualified",
+      "draft_ready",
+      "sent",
+      "follow_up_due",
+      "replied_positive",
+      "replied_neutral",
+      "replied_negative",
+      "closed"
+    ],
+    "priorities": [
+      "high",
+      "medium",
+      "low"
+    ],
+    "findings_decisions": [
+      "new",
+      "keep",
+      "discard",
+      "duplicate"
+    ],
+    "draft_types": [
+      "initial",
+      "follow_up",
+      "reply"
+    ],
+    "draft_statuses": [
+      "draft",
+      "needs_review",
+      "ready",
+      "sent",
+      "obsolete"
+    ],
+    "event_types": [
+      "draft_created",
+      "sent",
+      "follow_up_sent",
+      "reply_received",
+      "meeting_requested",
+      "rejected",
+      "no_response_closed",
+      "note"
+    ],
+    "contact_types": [
+      "professor",
+      "pi",
+      "postdoc",
+      "graduate_student",
+      "founder",
+      "recruiter",
+      "team_member"
+    ],
+    "response_sentiments": [
+      "positive",
+      "neutral",
+      "negative"
+    ],
+    "search_run_statuses": [
+      "queued",
+      "running",
+      "completed",
+      "failed"
+    ],
+    "sources": [
+      "uc_davis_site",
+      "lab_website",
+      "google",
+      "linkedin",
+      "crunchbase",
+      "wellfound",
+      "company_site",
+      "manual"
+    ],
+    "category_tags": [
+      "ai_ml",
+      "hci",
+      "cognitive_science",
+      "neuroscience",
+      "nlp",
+      "robotics",
+      "healthtech",
+      "edtech",
+      "developer_tools",
+      "consumer",
+      "research_platforms"
+    ]
+  },
+  "tables": [
+    {
+      "name": "Profiles",
+      "description": "Personal profile snapshots used for personalization and drafting.",
+      "primary_field": "Profile Name",
+      "fields": [
+        {
+          "name": "Profile Name",
+          "type": "singleLineText"
+        },
+        {
+          "name": "School",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Majors",
+          "type": "multipleSelects",
+          "options": [
+            "Cognitive Science",
+            "Computer Science"
+          ]
+        },
+        {
+          "name": "Year",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Resume URL",
+          "type": "url"
+        },
+        {
+          "name": "Interests",
+          "type": "longText"
+        },
+        {
+          "name": "Skills",
+          "type": "longText"
+        },
+        {
+          "name": "Projects",
+          "type": "longText"
+        },
+        {
+          "name": "Preferred Roles",
+          "type": "longText"
+        },
+        {
+          "name": "Location Preference",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Availability",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Personalization Notes",
+          "type": "longText"
+        },
+        {
+          "name": "Active",
+          "type": "checkbox"
+        }
+      ]
+    },
+    {
+      "name": "Search Runs",
+      "description": "Search jobs or query batches executed against external sources.",
+      "primary_field": "Run Name",
+      "fields": [
+        {
+          "name": "Run Name",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Target Type",
+          "type": "singleSelect",
+          "options": "$target_types"
+        },
+        {
+          "name": "Source",
+          "type": "singleSelect",
+          "options": "$sources"
+        },
+        {
+          "name": "Query Text",
+          "type": "longText"
+        },
+        {
+          "name": "Filters Used",
+          "type": "longText"
+        },
+        {
+          "name": "Profile",
+          "type": "linkedRecord",
+          "linked_table": "Profiles"
+        },
+        {
+          "name": "Run Date",
+          "type": "dateTime"
+        },
+        {
+          "name": "Status",
+          "type": "singleSelect",
+          "options": "$search_run_statuses"
+        },
+        {
+          "name": "Notes",
+          "type": "longText"
+        },
+        {
+          "name": "Result Count",
+          "type": "number"
+        },
+        {
+          "name": "Imported Count",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "Findings",
+      "description": "Raw search results before qualification into opportunities.",
+      "primary_field": "Title",
+      "fields": [
+        {
+          "name": "Title",
+          "type": "singleLineText"
+        },
+        {
+          "name": "URL",
+          "type": "url"
+        },
+        {
+          "name": "Source",
+          "type": "singleSelect",
+          "options": "$sources"
+        },
+        {
+          "name": "Snippet",
+          "type": "longText"
+        },
+        {
+          "name": "Target Type",
+          "type": "singleSelect",
+          "options": "$target_types"
+        },
+        {
+          "name": "Search Run",
+          "type": "linkedRecord",
+          "linked_table": "Search Runs"
+        },
+        {
+          "name": "Candidate Name",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Category Tags",
+          "type": "multipleSelects",
+          "options": "$category_tags"
+        },
+        {
+          "name": "Location",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Decision",
+          "type": "singleSelect",
+          "options": "$findings_decisions"
+        },
+        {
+          "name": "Decision Reason",
+          "type": "longText"
+        },
+        {
+          "name": "Matched Opportunity",
+          "type": "linkedRecord",
+          "linked_table": "Opportunities"
+        },
+        {
+          "name": "Last Verified",
+          "type": "date"
+        },
+        {
+          "name": "Structured Data",
+          "type": "longText"
+        }
+      ]
+    },
+    {
+      "name": "Opportunities",
+      "description": "Qualified outreach targets. One row per lab or startup.",
+      "primary_field": "Name",
+      "fields": [
+        {
+          "name": "Name",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Target Type",
+          "type": "singleSelect",
+          "options": "$target_types"
+        },
+        {
+          "name": "Stage",
+          "type": "singleSelect",
+          "options": "$opportunity_stages"
+        },
+        {
+          "name": "Fit Score",
+          "type": "number"
+        },
+        {
+          "name": "Priority",
+          "type": "singleSelect",
+          "options": "$priorities"
+        },
+        {
+          "name": "Why Fit",
+          "type": "longText"
+        },
+        {
+          "name": "Status Summary",
+          "type": "longText"
+        },
+        {
+          "name": "Primary Category",
+          "type": "singleSelect",
+          "options": "$category_tags"
+        },
+        {
+          "name": "Category Tags",
+          "type": "multipleSelects",
+          "options": "$category_tags"
+        },
+        {
+          "name": "Primary Contact",
+          "type": "linkedRecord",
+          "linked_table": "Contacts"
+        },
+        {
+          "name": "Next Action",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Next Follow-Up Date",
+          "type": "date"
+        },
+        {
+          "name": "Last Activity Date",
+          "type": "date",
+          "writable": false,
+          "computed_from": "rollup from Outreach Events.Event Date"
+        },
+        {
+          "name": "Outcome",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Owner",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Open/Closed",
+          "type": "singleSelect",
+          "options": [
+            "open",
+            "closed"
+          ]
+        },
+        {
+          "name": "Profile",
+          "type": "linkedRecord",
+          "linked_table": "Profiles"
+        },
+        {
+          "name": "Related Findings",
+          "type": "linkedRecord",
+          "linked_table": "Findings"
+        }
+      ]
+    },
+    {
+      "name": "Lab Details",
+      "description": "Lab-specific fields linked one-to-one with opportunities.",
+      "primary_field": "Detail Name",
+      "fields": [
+        {
+          "name": "Detail Name",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Opportunity",
+          "type": "linkedRecord",
+          "linked_table": "Opportunities"
+        },
+        {
+          "name": "University",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Department",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Professor/PI",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Lab Page",
+          "type": "url"
+        },
+        {
+          "name": "Research Areas",
+          "type": "longText"
+        },
+        {
+          "name": "Methods",
+          "type": "longText"
+        },
+        {
+          "name": "Current Projects Summary",
+          "type": "longText"
+        },
+        {
+          "name": "Recent Publications/Topics",
+          "type": "longText"
+        },
+        {
+          "name": "Undergrad Friendly",
+          "type": "checkbox"
+        },
+        {
+          "name": "Application Path",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Funding Signal",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Manual Notes",
+          "type": "longText"
+        }
+      ]
+    },
+    {
+      "name": "Startup Details",
+      "description": "Startup-specific fields linked one-to-one with opportunities.",
+      "primary_field": "Detail Name",
+      "fields": [
+        {
+          "name": "Detail Name",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Opportunity",
+          "type": "linkedRecord",
+          "linked_table": "Opportunities"
+        },
+        {
+          "name": "Company Site",
+          "type": "url"
+        },
+        {
+          "name": "Crunchbase URL",
+          "type": "url"
+        },
+        {
+          "name": "Industry",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Business Model",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Funding Stage",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Total Funding",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Latest Round Type",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Latest Round Date",
+          "type": "date"
+        },
+        {
+          "name": "Hiring Signal",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Careers Page",
+          "type": "url"
+        },
+        {
+          "name": "Relevant Roles",
+          "type": "longText"
+        },
+        {
+          "name": "HQ",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Remote",
+          "type": "checkbox"
+        },
+        {
+          "name": "Investors",
+          "type": "longText"
+        },
+        {
+          "name": "Manual Notes",
+          "type": "longText"
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "description": "People attached to a lab or startup opportunity.",
+      "primary_field": "Full Name",
+      "fields": [
+        {
+          "name": "Full Name",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Role",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Organization/Lab",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Opportunity",
+          "type": "linkedRecord",
+          "linked_table": "Opportunities"
+        },
+        {
+          "name": "Email",
+          "type": "email"
+        },
+        {
+          "name": "LinkedIn",
+          "type": "url"
+        },
+        {
+          "name": "Contact Type",
+          "type": "singleSelect",
+          "options": "$contact_types"
+        },
+        {
+          "name": "Primary",
+          "type": "checkbox"
+        },
+        {
+          "name": "Confidence",
+          "type": "number"
+        },
+        {
+          "name": "Warm/Cold",
+          "type": "singleSelect",
+          "options": [
+            "warm",
+            "cold"
+          ]
+        },
+        {
+          "name": "Last Contacted",
+          "type": "date",
+          "writable": false,
+          "computed_from": "rollup from Outreach Events.Event Date where type is sent or follow_up_sent"
+        },
+        {
+          "name": "Last Reply Date",
+          "type": "date",
+          "writable": false,
+          "computed_from": "rollup from Outreach Events.Event Date where type is reply_received"
+        },
+        {
+          "name": "Response Sentiment",
+          "type": "singleSelect",
+          "options": "$response_sentiments"
+        },
+        {
+          "name": "Notes",
+          "type": "longText"
+        }
+      ]
+    },
+    {
+      "name": "Drafts",
+      "description": "Generated email drafts and their versions.",
+      "primary_field": "Draft Title",
+      "fields": [
+        {
+          "name": "Draft Title",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Opportunity",
+          "type": "linkedRecord",
+          "linked_table": "Opportunities"
+        },
+        {
+          "name": "Contact",
+          "type": "linkedRecord",
+          "linked_table": "Contacts"
+        },
+        {
+          "name": "Profile",
+          "type": "linkedRecord",
+          "linked_table": "Profiles"
+        },
+        {
+          "name": "Draft Type",
+          "type": "singleSelect",
+          "options": "$draft_types"
+        },
+        {
+          "name": "Subject",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Body",
+          "type": "longText"
+        },
+        {
+          "name": "Personalization Hook",
+          "type": "longText"
+        },
+        {
+          "name": "Call To Action",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Status",
+          "type": "singleSelect",
+          "options": "$draft_statuses"
+        },
+        {
+          "name": "Generated At",
+          "type": "dateTime"
+        },
+        {
+          "name": "Source Snapshot",
+          "type": "longText"
+        },
+        {
+          "name": "Version",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "Outreach Events",
+      "description": "Communication history and status transitions.",
+      "primary_field": "Event Title",
+      "fields": [
+        {
+          "name": "Event Title",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Opportunity",
+          "type": "linkedRecord",
+          "linked_table": "Opportunities"
+        },
+        {
+          "name": "Contact",
+          "type": "linkedRecord",
+          "linked_table": "Contacts"
+        },
+        {
+          "name": "Draft",
+          "type": "linkedRecord",
+          "linked_table": "Drafts"
+        },
+        {
+          "name": "Event Type",
+          "type": "singleSelect",
+          "options": "$event_types"
+        },
+        {
+          "name": "Event Date",
+          "type": "dateTime"
+        },
+        {
+          "name": "Channel",
+          "type": "singleSelect",
+          "options": [
+            "email",
+            "linkedin",
+            "manual_note"
+          ]
+        },
+        {
+          "name": "Summary",
+          "type": "longText"
+        },
+        {
+          "name": "Raw Reply",
+          "type": "longText"
+        },
+        {
+          "name": "Outcome Change",
+          "type": "singleLineText"
+        },
+        {
+          "name": "Next Follow-Up Date",
+          "type": "date"
+        }
+      ]
+    }
+  ],
+  "recommended_views": [
+    {
+      "table": "Findings",
+      "name": "New Findings",
+      "filter": "Decision is empty or new"
+    },
+    {
+      "table": "Opportunities",
+      "name": "Labs to Review",
+      "filter": "Target Type = lab and Stage in discovered,researching,qualified"
+    },
+    {
+      "table": "Opportunities",
+      "name": "Startups to Review",
+      "filter": "Target Type = startup and Stage in discovered,researching,qualified"
+    },
+    {
+      "table": "Drafts",
+      "name": "Draft Ready",
+      "filter": "Status in needs_review,ready"
+    },
+    {
+      "table": "Opportunities",
+      "name": "Sent / Awaiting Reply",
+      "filter": "Stage in sent,follow_up_due"
+    },
+    {
+      "table": "Opportunities",
+      "name": "Positive Replies",
+      "filter": "Stage = replied_positive"
+    },
+    {
+      "table": "Opportunities",
+      "name": "Closed / Not a Fit",
+      "filter": "Open/Closed = closed"
+    }
+  ],
+  "recommended_automations": [
+    {
+      "name": "Finding accepted creates opportunity",
+      "trigger": "When Findings.Decision changes to keep",
+      "action": "Create or link an Opportunities record and attach the current finding"
+    },
+    {
+      "name": "Draft creation readiness",
+      "trigger": "When Opportunities has Profile, Primary Contact, and Stage = qualified",
+      "action": "Create a Drafts record with status draft or needs_review"
+    },
+    {
+      "name": "Send event updates stage",
+      "trigger": "When Outreach Events.Event Type = sent",
+      "action": "Update Opportunities.Stage to sent and set Next Follow-Up Date to Event Date + 7 days unless already populated"
+    },
+    {
+      "name": "Reply event updates status",
+      "trigger": "When Outreach Events.Event Type = reply_received",
+      "action": "Update Contacts.Last Reply fields, response sentiment, and Opportunities stage/outcome"
+    },
+    {
+      "name": "Follow-up queue",
+      "trigger": "Scheduled daily automation",
+      "action": "Mark Opportunities as follow_up_due where Next Follow-Up Date is today or earlier and no reply exists"
+    }
+  ],
+  "dedupe_rules": {
+    "labs": [
+      "University",
+      "Professor/PI",
+      "Opportunity name"
+    ],
+    "startups": [
+      "Company Site domain",
+      "Crunchbase URL"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+.next
+node_modules
+coverage
+dist
+*.log
+.DS_Store
+.env
+public/uploads/resumes/*
+!public/uploads/resumes/.gitkeep
