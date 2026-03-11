@@ -6,6 +6,7 @@ import {
   createStartupDetail,
   getFinding,
   getProfile,
+  listFindings,
   listOpportunities,
   updateFinding,
   updateSearchRun
@@ -52,6 +53,102 @@ type RunResearchInput = {
   filtersUsed: string;
   maxResults: number;
 };
+
+function normalizeIdentityValue(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function normalizeUrlIdentity(url: string) {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.replace(/^www\./, "").toLowerCase();
+    const pathname = parsed.pathname.replace(/\/+$/, "").toLowerCase() || "/";
+    return `${hostname}${pathname}`;
+  } catch {
+    return normalizeIdentityValue(url);
+  }
+}
+
+function normalizeUrlHost(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function buildCandidateIdentity(candidate: {
+  candidateName: string;
+  title: string;
+  url: string;
+}) {
+  return {
+    name: normalizeIdentityValue(candidate.candidateName || candidate.title),
+    url: normalizeUrlIdentity(candidate.url),
+    host: normalizeUrlHost(candidate.url)
+  };
+}
+
+export function filterExistingCandidates(
+  targetType: TargetType,
+  candidates: DiscoveryCandidate[],
+  existingFindings: Pick<Finding, "targetType" | "candidateName" | "title" | "url">[],
+  existingOpportunities: Pick<{ name: string; targetType: TargetType }, "name" | "targetType">[]
+) {
+  const existingNames = new Set<string>();
+  const existingUrls = new Set<string>();
+  const existingHosts = new Set<string>();
+
+  for (const finding of existingFindings) {
+    if (finding.targetType !== targetType) {
+      continue;
+    }
+    const identity = buildCandidateIdentity(finding);
+    if (identity.name) {
+      existingNames.add(identity.name);
+    }
+    if (identity.url) {
+      existingUrls.add(identity.url);
+    }
+    if (identity.host) {
+      existingHosts.add(identity.host);
+    }
+  }
+
+  for (const opportunity of existingOpportunities) {
+    if (opportunity.targetType !== targetType) {
+      continue;
+    }
+    const name = normalizeIdentityValue(opportunity.name);
+    if (name) {
+      existingNames.add(name);
+    }
+  }
+
+  const seenWithinRun = new Set<string>();
+  const freshCandidates: DiscoveryCandidate[] = [];
+  const skippedCandidates: DiscoveryCandidate[] = [];
+
+  for (const candidate of candidates) {
+    const identity = buildCandidateIdentity(candidate);
+    const runKey = `${identity.name}|${identity.url}`;
+
+    const alreadyExists =
+      (identity.name && existingNames.has(identity.name)) ||
+      (identity.url && existingUrls.has(identity.url)) ||
+      (targetType === "startup" && identity.host && existingHosts.has(identity.host));
+
+    if (alreadyExists || seenWithinRun.has(runKey)) {
+      skippedCandidates.push(candidate);
+      continue;
+    }
+
+    seenWithinRun.add(runKey);
+    freshCandidates.push(candidate);
+  }
+
+  return { freshCandidates, skippedCandidates };
+}
 
 async function setSearchRunProgress(
   searchRunId: string,
@@ -399,22 +496,36 @@ export async function executeResearchRun(
       filtersUsed: input.filtersUsed,
       maxResults: input.maxResults
     });
+    const [existingFindings, existingOpportunities] = await Promise.all([
+      listFindings(),
+      listOpportunities()
+    ]);
+    const { freshCandidates, skippedCandidates } = filterExistingCandidates(
+      input.targetType,
+      candidates,
+      existingFindings,
+      existingOpportunities
+    );
     progress = completeSearchRunStep(progress, "discover_candidates");
     progress = setSearchRunMessage(
       progress,
-      `Discovery agent found ${candidates.length} candidate targets.`
+      skippedCandidates.length > 0
+        ? `Discovery agent found ${candidates.length} candidate targets and skipped ${skippedCandidates.length} existing entries. ${freshCandidates.length} new targets remain.`
+        : `Discovery agent found ${freshCandidates.length} new candidate targets.`
     );
     await setSearchRunProgress(input.searchRunId, {
       progress,
-      resultCount: candidates.length,
+      resultCount: freshCandidates.length,
       importedCount: 0
     });
 
-    if (candidates.length === 0) {
+    if (freshCandidates.length === 0) {
       progress = startSearchRunStep(
         progress,
         "finished",
-        "Completed with 0 findings. The discovery agent did not return any candidates."
+        skippedCandidates.length > 0
+          ? "Completed with 0 findings. All discovered candidates already exist in Airtable."
+          : "Completed with 0 findings. The discovery agent did not return any candidates."
       );
       progress = completeSearchRunStep(progress, "finished");
       const searchRun = await updateSearchRun(input.searchRunId, {
@@ -424,7 +535,9 @@ export async function executeResearchRun(
         notes: serializeSearchRunProgress(
           setSearchRunMessage(
             progress,
-            "Completed with 0 findings. The discovery agent did not return any candidates. Try broadening the query or removing filters."
+            skippedCandidates.length > 0
+              ? `Completed with 0 findings. All ${skippedCandidates.length} discovered candidates were already present in Airtable.`
+              : "Completed with 0 findings. The discovery agent did not return any candidates. Try broadening the query or removing filters."
           )
         )
       });
@@ -439,16 +552,19 @@ export async function executeResearchRun(
     progress = startSearchRunStep(
       progress,
       "enrich_candidates",
-      `Enrichment agents are processing ${candidates.length} candidates in parallel.`
+      `Enrichment agents are processing ${freshCandidates.length} new candidates in parallel.`
     );
     await setSearchRunProgress(input.searchRunId, {
       progress,
-      resultCount: candidates.length,
+      resultCount: freshCandidates.length,
       importedCount: 0
     });
     let completedEnrichments = 0;
     let failedEnrichments = 0;
-    const enrichmentResults = await runWithConcurrency(candidates, 3, async (candidate) => {
+    const enrichmentResults = await runWithConcurrency(
+      freshCandidates,
+      3,
+      async (candidate) => {
         try {
           return await enrichCandidate({
             candidate,
@@ -462,15 +578,16 @@ export async function executeResearchRun(
           completedEnrichments += 1;
           progress = setSearchRunMessage(
             progress,
-            `Enrichment agents completed ${completedEnrichments} of ${candidates.length} candidates.`
+            `Enrichment agents completed ${completedEnrichments} of ${freshCandidates.length} new candidates.`
           );
           await setSearchRunProgress(input.searchRunId, {
             progress,
-            resultCount: candidates.length,
+            resultCount: freshCandidates.length,
             importedCount: 0
           });
         }
-      });
+      }
+    );
     const enrichedResults = enrichmentResults.reduce<EnrichedResearchResult[]>(
       (results, result) => {
         if (result) {
@@ -502,7 +619,7 @@ export async function executeResearchRun(
       progress = completeSearchRunStep(progress, "finished");
       const searchRun = await updateSearchRun(input.searchRunId, {
         status: "completed",
-        resultCount: candidates.length,
+        resultCount: freshCandidates.length,
         importedCount: 0,
         notes: serializeSearchRunProgress(
           setSearchRunMessage(

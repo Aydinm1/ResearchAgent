@@ -71,6 +71,7 @@ That write smoke creates a temporary search run record in Airtable and is meant 
 - [app/search-runs/page.tsx](/Users/user/Documents/Coding/ResearchAgent/app/search-runs/page.tsx)
 - [app/findings/page.tsx](/Users/user/Documents/Coding/ResearchAgent/app/findings/page.tsx)
 - [app/opportunities/[id]/page.tsx](/Users/user/Documents/Coding/ResearchAgent/app/opportunities/[id]/page.tsx)
+- [docs/ai-agents.md](/Users/user/Documents/Coding/ResearchAgent/docs/ai-agents.md)
 - [lib/airtable/repositories.ts](/Users/user/Documents/Coding/ResearchAgent/lib/airtable/repositories.ts)
 - [lib/services/research.ts](/Users/user/Documents/Coding/ResearchAgent/lib/services/research.ts)
 - [lib/services/drafts.ts](/Users/user/Documents/Coding/ResearchAgent/lib/services/drafts.ts)
